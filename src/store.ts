@@ -1,0 +1,7 @@
+import { create } from 'zustand';
+import { makeFindings, measure, type AnalysisResult, type PhaseKey } from './analysis';
+
+export type Swing = { id:string; player:string; side:string; level:string; swingType:string; concern:string; fileName:string; date:string };
+type Store = { file:File|null; profile:Partial<Swing>; result:AnalysisResult|null; history:Swing[]; setFile:(f:File|null)=>void; setProfile:(p:Partial<Swing>)=>void; setResult:(r:AnalysisResult|null)=>void; setPhase:(p:PhaseKey,i:number)=>void; save:(s:Swing)=>void; clear:()=>void };
+const saved = ():Swing[] => { try { return JSON.parse(localStorage.getItem('swinglab-history')||'[]') } catch { return [] } };
+export const useSwing = create<Store>((set)=>({file:null,result:null,profile:{side:'Right',level:'High school',swingType:'Tee'},history:saved(),setFile:(file)=>set({file,result:null}),setProfile:(p)=>set(s=>({profile:{...s.profile,...p}})),setResult:(result)=>set({result}),setPhase:(phase,index)=>set(s=>{if(!s.result)return{};const phases={...s.result.phases,[phase]:index},measurements=measure(s.result.frames,phases);return{result:{...s.result,phases,measurements,findings:makeFindings(measurements)}}}),save:(entry)=>set(s=>{const history=[entry,...s.history.filter(x=>x.id!==entry.id)];localStorage.setItem('swinglab-history',JSON.stringify(history));return{history}}),clear:()=>set(()=>{localStorage.removeItem('swinglab-history');return{history:[]}})}));
